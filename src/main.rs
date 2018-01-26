@@ -18,9 +18,11 @@ use sdl2::video::Window;
 
 const WIDTH: u32 = 512;
 const HEIGHT: u32 = 256;
-const ITEMS: usize = 300;
+const ITEMS: usize = 25;
 const MIN_RAD: i16 = 10;
 const MAX_RAD: i16 = WIDTH as i16 / 20;
+const MIN_SIDES: i16 = 3;
+const MAX_SIDES: i16 = 6;
 
 fn main() {
     let sdl_context = sdl2::init().expect("Could not initialize context.");
@@ -46,6 +48,7 @@ fn main() {
     let x_range = Range::new((WIDTH / 2) as i16, WIDTH as i16);
     let y_range = Range::new(0, HEIGHT as i16);
     let r_range = Range::new(MIN_RAD, MAX_RAD);
+    let s_range = Range::new(MIN_SIDES, MAX_SIDES);
     let first = canvas.read_pixels(Rect::new(0, 0, WIDTH / 2, HEIGHT), RGBA8888).unwrap();
     let mut polygons = Vec::new();
     let mut last_fitness = std::f64::MAX;
@@ -55,8 +58,16 @@ fn main() {
 
     for _ in 0..ITEMS {
         let color = Color::RGBA(rng.gen::<u8>(), rng.gen::<u8>(), rng.gen::<u8>(), rng.gen::<u8>());
-        let _ = canvas.filled_circle(-MIN_RAD, -MIN_RAD, MIN_RAD, color);
-        polygons.push((-MIN_RAD, -MIN_RAD, MIN_RAD, color));
+
+        let mut x = Vec::new();
+        let mut y = Vec::new();
+
+        for _ in 0..3 {
+            x.push(x_range.ind_sample(&mut rng));
+            y.push(y_range.ind_sample(&mut rng));
+        }
+
+        polygons.push((x, y, color));
     }
 
     'running: loop {
@@ -84,33 +95,51 @@ fn main() {
         {
             let item = &mut new_polygons[frame % ITEMS];
 
-            if rng.gen() || item.0 < 256 {
-                item.0 = x_range.ind_sample(&mut rng);
+            if rng.gen() {
+                for i in 0..item.0.len() {
+                    if rng.gen() {
+                        item.0[i] = x_range.ind_sample(&mut rng);
+                    }
+                }
             }
             if rng.gen() {
-                item.1 = y_range.ind_sample(&mut rng);
+                for i in 0..item.1.len() {
+                    if rng.gen() {
+                        item.1[i] = y_range.ind_sample(&mut rng);
+                    }
+                }
             }
+            // if rng.gen() {
+            //     let sides = s_range.ind_sample(&mut rng);
+
+            //     while item.0.len() > sides as usize {
+            //         item.0.pop();
+            //         item.1.pop();
+            //     }
+
+            //     while item.0.len() < sides as usize {
+            //         item.0.push(x_range.ind_sample(&mut rng));
+            //         item.1.push(y_range.ind_sample(&mut rng));
+            //     }
+            // }
             if rng.gen() {
-                item.2 = r_range.ind_sample(&mut rng);
-            }
-            if rng.gen() {
                 if rng.gen() {
-                    item.3.r = rng.gen::<u8>();
+                    item.2.r = rng.gen::<u8>();
                 }
                 if rng.gen() {
-                    item.3.g = rng.gen::<u8>();
+                    item.2.g = rng.gen::<u8>();
                 }
                 if rng.gen() {
-                    item.3.b = rng.gen::<u8>();
+                    item.2.b = rng.gen::<u8>();
                 }
                 if rng.gen() {
-                    item.3.a = rng.gen::<u8>();
+                    item.2.a = rng.gen::<u8>();
                 }
             }
         }
 
-        for &(x, y, r, c) in new_polygons.iter() {
-            let _ = canvas.filled_circle(x, y, r, c);
+        for &(ref x, ref y, c) in new_polygons.iter() {
+            let _ = canvas.filled_polygon(&x, &y, c);
         }
 
         let pixels = canvas.read_pixels(Rect::new((WIDTH / 2) as i32, 0, WIDTH / 2, HEIGHT), RGBA8888).unwrap();
