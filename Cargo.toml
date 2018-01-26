@@ -1,0 +1,12 @@
+[package]
+name = "draw"
+version = "0.1.0"
+authors = ["Maid Dog <maiddogsrl@gmail.com>"]
+build = "build.rs"
+
+[dependencies]
+rand = "0.4"
+
+[dependencies.sdl2]
+version = "0.31"
+features = ["gfx", "image"]
