@@ -7,7 +7,6 @@ use rand::distributions::{IndependentSample, Range};
 use rand::Rng;
 
 use sdl2::event::Event;
-use sdl2::gfx::framerate::FPSManager;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::image::{LoadTexture, INIT_PNG};
 use sdl2::keyboard::Keycode;
@@ -17,12 +16,9 @@ use sdl2::rect::Rect;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 
-use std::time::Duration;
-
-const WIDTH: u32 = 800;
-const HEIGHT: u32 = 300;
+const WIDTH: u32 = 512;
+const HEIGHT: u32 = 256;
 const ITEMS: usize = 300;
-const RADIUS: i16 = 10;
 const MIN_RAD: i16 = 10;
 const MAX_RAD: i16 = WIDTH as i16 / 20;
 
@@ -41,7 +37,7 @@ fn main() {
     canvas.clear();
 
     let texture_creator = canvas.texture_creator();
-    let texture = texture_creator.load_texture("test.png").unwrap();
+    let texture = texture_creator.load_texture("shelterfrog_512.png").unwrap();
 
     canvas.copy(&texture, None, Rect::new(0, 0, WIDTH / 2, HEIGHT)).unwrap();
 
@@ -59,7 +55,7 @@ fn main() {
 
     for _ in 0..ITEMS {
         let color = Color::RGBA(rng.gen::<u8>(), rng.gen::<u8>(), rng.gen::<u8>(), rng.gen::<u8>());
-        canvas.filled_circle(-MIN_RAD, -MIN_RAD, MIN_RAD, color);
+        let _ = canvas.filled_circle(-MIN_RAD, -MIN_RAD, MIN_RAD, color);
         polygons.push((-MIN_RAD, -MIN_RAD, MIN_RAD, color));
     }
 
@@ -86,7 +82,7 @@ fn main() {
         let mut new_polygons = polygons.clone();
 
         {
-            let mut item = &mut new_polygons[frame % ITEMS];
+            let item = &mut new_polygons[frame % ITEMS];
 
             if rng.gen() || item.0 < 256 {
                 item.0 = x_range.ind_sample(&mut rng);
@@ -114,12 +110,11 @@ fn main() {
         }
 
         for &(x, y, r, c) in new_polygons.iter() {
-            canvas.filled_circle(x, y, r, c);
+            let _ = canvas.filled_circle(x, y, r, c);
         }
 
         let pixels = canvas.read_pixels(Rect::new((WIDTH / 2) as i32, 0, WIDTH / 2, HEIGHT), RGBA8888).unwrap();
         let fitness = fitness(&first, &pixels);
-        //std::thread::sleep(Duration::from_millis(50));
 
         if fitness < last_fitness {
             //println!("Fitness with first: {}", fitness);
@@ -134,44 +129,7 @@ fn main() {
     }
 }
 
-fn to_polar(point: &(i16, i16)) -> (f64, f64) {
-    let x = point.0 as f64;
-    let y = point.1 as f64;
-
-    let r = ((x * x + y * y) as f64).sqrt();
-    let phi = (y as f64).atan2(x as f64);
-    (r, phi)
-}
-
-fn parse_dna<'a>(dna: &[u8], canvas: &mut Canvas<Window>) {
-    let index = 0;
-
-    while index < dna.len() {
-        let size = dna[index] as usize;
-
-        if dna.len() < index + size * 4 + 1 {
-            break;
-        }
-
-        for point in 1..=size {
-
-        }
-    }
-}
-
 fn fitness(original: &Vec<u8>, current: &Vec<u8>) -> f64 {
-    // original
-    //     .chunks(4)
-    //     .zip(current.chunks(4))
-    //     .fold(0f64, |fitness, (a, b)| {
-    //         let r = a[0] as f64 - b[0] as f64;
-    //         let g = a[1] as f64 - b[1] as f64;
-    //         let blue = a[2] as f64 - b[2] as f64;
-    //         let alpha = a[3] as f64 - b[3] as f64;
-
-    //         fitness + r * r + g * g + blue * blue + alpha * alpha
-    //     })
-
     original
         .iter()
         .zip(current.iter())
