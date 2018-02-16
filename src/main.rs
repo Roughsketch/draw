@@ -1,10 +1,12 @@
 #![feature(inclusive_range_syntax)]
 
 extern crate rand;
+extern crate rayon;
 extern crate sdl2;
 
 use rand::distributions::{IndependentSample, Range};
 use rand::Rng;
+use rayon::prelude::*;
 
 use sdl2::event::Event;
 use sdl2::gfx::primitives::DrawRenderer;
@@ -131,10 +133,10 @@ fn main() {
 
 fn fitness(original: &Vec<u8>, current: &Vec<u8>) -> f64 {
     original
-        .iter()
-        .zip(current.iter())
-        .fold(0f64, |fitness, (a, b)| {
+        .par_iter()
+        .zip(current.par_iter())
+        .fold(|| 0f64, |fitness, (a, b)| {
             let c = *a as f64 - *b as f64;
             fitness + c * c
-        })
+        }).sum()
 }
