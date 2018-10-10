@@ -2,12 +2,9 @@
 name = "draw"
 version = "0.1.0"
 authors = ["Maid Dog <maiddogsrl@gmail.com>"]
-build = "build.rs"
+edition = "2018"
 
 [dependencies]
+ggez = "0.4"
 rand = "0.4"
 rayon = "1.0"
-
-[dependencies.sdl2]
-version = "0.31"
-features = ["gfx", "image"]

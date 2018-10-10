@@ -1,45 +1,79 @@
-#![feature(inclusive_range_syntax)]
-
-extern crate rand;
-extern crate rayon;
-extern crate sdl2;
-
 use rand::distributions::{IndependentSample, Range};
 use rand::Rng;
 use rayon::prelude::*;
 
-use sdl2::event::Event;
-use sdl2::gfx::primitives::DrawRenderer;
-use sdl2::image::{LoadTexture, INIT_PNG};
-use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use sdl2::pixels::PixelFormatEnum::RGBA8888;
-use sdl2::rect::Rect;
-use sdl2::render::Canvas;
-use sdl2::video::Window;
+use ggez::{Context, GameResult};
+use ggez::conf;
+use ggez::event::{self, EventHandler, Keycode, Mod, MouseButton};
+use ggez::graphics::{self, Color, DrawMode, DrawParam, Font, MeshBuilder, Point2, Text};
+use ggez::timer;
 
 const WIDTH: u32 = 512;
 const HEIGHT: u32 = 256;
-const ITEMS: usize = 300;
+const ITEMS: usize = 100;
 const MIN_RAD: i16 = 10;
 const MAX_RAD: i16 = WIDTH as i16 / 20;
 
-fn main() {
-    let sdl_context = sdl2::init().expect("Could not initialize context.");
-    let _image_context = sdl2::image::init(INIT_PNG).unwrap();
-    let video = sdl_context.video().expect("Could not get video context.");
-    let window = video.window("Draw", WIDTH, HEIGHT)
-        .position_centered()
-        .opengl()
-        .build()
-        .expect("Could not build window.");
+mod mainstate;
+use mainstate::MainState;
 
-    let mut canvas = window.into_canvas().build().unwrap();
-    canvas.set_draw_color(Color::RGB(0, 0, 0));
-    canvas.clear();
+impl EventHandler for MainState {
+    fn update(&mut self, _ctx: &mut Context) -> GameResult<()> {
+        Ok(())
+    }
+
+    fn draw(&mut self, ctx: &mut Context) -> GameResult<()> {
+        graphics::clear(ctx);
+
+        graphics::present(ctx);
+
+        Ok(())
+    }
+
+    fn key_down_event(&mut self, ctx: &mut Context, keycode: Keycode, _keymod: Mod, _repeat: bool) {
+        match keycode {
+            Keycode::Escape => ctx.quit().unwrap(),
+            _ => {}
+        }
+    }
+
+    fn mouse_button_down_event(&mut self, _ctx: &mut Context, button: MouseButton, x: i32, y: i32) {
+    }
+}
+
+fn main() {
+    let mut config = conf::Conf::new();
+    config.window_mode.width = size;
+    config.window_mode.height = size;
+    config.window_mode.vsync = false;
+
+    let ctx = &mut Context::load_from_conf("Reversi", "Roughsketch", config).unwrap();
+
+    if let Ok(manifest_dir) = std::env::var("CARGO_MANIFEST_DIR") {
+        let mut path = std::path::PathBuf::from(manifest_dir);
+        path.push("assets");
+        ctx.filesystem.mount(&path, true);
+    }
+
+    let mut game = match MainState::new(ctx, "face.png") {
+        Ok(game) => game,
+        Err(why) => {
+            println!("Could not load MainState: {:?}", why);
+            return;
+        }
+    };
+
+    graphics::set_background_color(ctx, graphics::BLACK));
+    let result = event::run(ctx, &mut game);
+
+    if let Err(e) = result {
+        println!("Error encountered running game: {}", e);
+    } else {
+        println!("Game exited cleanly.");
+    }
 
     let texture_creator = canvas.texture_creator();
-    let texture = texture_creator.load_texture("shelterfrog_512.png").unwrap();
+    let texture = texture_creator.load_texture("face.png").unwrap();
 
     canvas.copy(&texture, None, Rect::new(0, 0, WIDTH / 2, HEIGHT)).unwrap();
 
@@ -122,8 +156,10 @@ fn main() {
             //println!("Fitness with first: {}", fitness);
             polygons = new_polygons;
             last_fitness = fitness;
-            canvas.copy(&texture, None, Rect::new(0, 0, WIDTH / 2, HEIGHT)).unwrap();
-            canvas.present();
+            if frame % ITEMS == 0 {
+                canvas.copy(&texture, None, Rect::new(0, 0, WIDTH / 2, HEIGHT)).unwrap();
+                canvas.present();
+            }
         } else {
             last_fitness *= 1.00001;
         }
